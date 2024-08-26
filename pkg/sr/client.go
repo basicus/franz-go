@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jcmturner/gokrb5/v8/spnego"
 	"io"
 	"net/http"
 	"net/url"
@@ -60,7 +61,8 @@ type Client struct {
 		user string
 		pass string
 	}
-	bearerToken string
+	bearerToken  string
+	spnegoClient *spnego.Client
 }
 
 // NewClient returns a new schema registry client.
@@ -133,12 +135,23 @@ start:
 	}
 	cl.applyParams(ctx, req)
 
-	resp, err := cl.httpcl.Do(req)
-	if err != nil {
-		if len(urls) == 0 {
-			return fmt.Errorf("unable to %s %q: %w", method, reqURL, err)
+	var resp *http.Response
+	if cl.spnegoClient != nil {
+		resp, err = cl.spnegoClient.Do(req)
+		if err != nil {
+			if len(urls) == 0 {
+				return fmt.Errorf("unable to %s %q: %w", method, reqURL, err)
+			}
+			goto start
 		}
-		goto start
+	} else {
+		resp, err = cl.httpcl.Do(req)
+		if err != nil {
+			if len(urls) == 0 {
+				return fmt.Errorf("unable to %s %q: %w", method, reqURL, err)
+			}
+			goto start
+		}
 	}
 
 	body, err := io.ReadAll(resp.Body)

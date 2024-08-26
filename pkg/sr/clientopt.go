@@ -2,6 +2,7 @@ package sr
 
 import (
 	"crypto/tls"
+	"github.com/jcmturner/gokrb5/v8/spnego"
 	"net"
 	"net/http"
 	"strings"
@@ -82,6 +83,13 @@ func BasicAuth(user, pass string) ClientOpt {
 func BearerToken(token string) ClientOpt {
 	return clientOpt{func(cl *Client) {
 		cl.bearerToken = token
+	}}
+}
+
+// SPNEGOClient sets SPNEGO Client
+func SPNEGOClient(client *spnego.Client) ClientOpt {
+	return clientOpt{func(cl *Client) {
+		cl.spnegoClient = client
 	}}
 }
 
